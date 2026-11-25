@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>ZAH's masterpiece - your key</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@600&display=swap" rel="stylesheet">
+<style>
+  :root { --bg:#0B0E14; --card:#141923; --field:#0D1119; --border:#232B3A; --text:#E8ECF4; --muted:#8993A8; --a1:#22C58B; --a2:#38BDF8; }
+  * { box-sizing:border-box; margin:0; }
+  body { min-height:100vh; display:grid; place-items:center; background:var(--bg); color:var(--text);
+         font-family:Inter, system-ui, sans-serif; padding:24px 16px;
+         background-image:radial-gradient(600px 400px at 50% -10%, rgba(34,197,139,.18), transparent 70%); }
+  .card { width:100%; max-width:460px; background:var(--card); border:1px solid var(--border); border-radius:18px;
+          padding:32px 28px 26px; position:relative; overflow:hidden; box-shadow:0 30px 80px rgba(0,0,0,.45); }
+  .card::before { content:""; position:absolute; inset:0 0 auto 0; height:2px; background:linear-gradient(90deg,var(--a1),var(--a2)); }
+  .logo { width:52px; height:52px; border-radius:14px; display:grid; place-items:center; font-weight:800; font-size:28px;
+          background:linear-gradient(135deg,var(--a1),var(--a2)); color:#fff; margin-bottom:18px; }
+  h1 { font-size:22px; font-weight:800; letter-spacing:-.01em; }
+  p.sub { color:var(--muted); font-size:14px; margin-top:6px; line-height:1.5; }
+  .key { margin-top:24px; display:flex; gap:10px; }
+  .key code { flex:1; background:var(--field); border:1px solid var(--border); border-radius:12px; padding:14px 12px;
+              font:600 18px "JetBrains Mono", Consolas, monospace; letter-spacing:.06em; text-align:center; user-select:all; }
+  button { border:0; border-radius:12px; padding:0 18px; font:600 14px Inter, sans-serif; color:#fff; cursor:pointer;
+           background:linear-gradient(180deg,#2BD49A,#19A774); transition:filter .15s, transform .1s; }
+  button:hover { filter:brightness(1.1); } button:active { transform:scale(.97); }
+  .meta { display:flex; justify-content:space-between; margin-top:14px; font-size:13px; color:var(--muted); }
+  .meta b { color:var(--text); font-weight:600; font-variant-numeric:tabular-nums; }
+  ol { margin:22px 0 0; padding-left:18px; color:var(--muted); font-size:13px; line-height:1.8; }
+  @media (max-width:420px) { .key { flex-direction:column; } button { padding:12px; } }
+</style>
+</head>
+<body>
+<main class="card">
+  <div class="logo">Z</div>
+  <h1>Your key for today</h1>
+  <p class="sub">Paste it into the unlock window of ZAH's masterpiece Free.</p>
+  <div class="key"><code id="key">ZAH-....-....-....</code><button id="copy">Copy</button></div>
+  <div class="meta"><span>New key in</span><b id="left">--:--:--</b></div>
+  <ol>
+    <li>Copy the key.</li>
+    <li>Paste it in the app and press <b>Unlock</b>.</li>
+    <li>It works until midnight UTC, then come back for a new one.</li>
+  </ol>
+</main>
+<script>
+const SECRET = "21d97698448dfd7cc8dc2cfa60e25156";
+function utcDay(d) { return d.toISOString().slice(0, 10).replace(/-/g, ""); }
+async function keyFor(day) {
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(SECRET + "|" + day));
+  const hex = [...new Uint8Array(buf)].slice(0, 6).map(b => b.toString(16).padStart(2, "0")).join("").toUpperCase();
+  return "ZAH-" + hex.slice(0, 4) + "-" + hex.slice(4, 8) + "-" + hex.slice(8, 12);
+}
+let shownDay = "";
+async function tick() {
+  const now = new Date();
+  const day = utcDay(now);
+  if (day !== shownDay) { shownDay = day; document.getElementById("key").textContent = await keyFor(day); }
+  const end = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1);
+  const s = Math.max(0, Math.floor((end - now) / 1000));
+  document.getElementById("left").textContent =
+    [Math.floor(s / 3600), Math.floor(s / 60) % 60, s % 60].map(n => String(n).padStart(2, "0")).join(":");
+}
+document.getElementById("copy").addEventListener("click", async (e) => {
+  try { await navigator.clipboard.writeText(document.getElementById("key").textContent); e.target.textContent = "Copied"; }
+  catch { e.target.textContent = "Select it"; }
+  setTimeout(() => (e.target.textContent = "Copy"), 1600);
+});
+tick(); setInterval(tick, 1000);
+</script>
+</body>
+</html>
